@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthSync - Medical AI Assistant</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css')}}"/>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-wrapper">
+            <!-- Header -->
+            <div class="chat-header">
+                <div class="bot-avatar">
+                    ⚕️
+                </div>
+                <div class="bot-info">
+                    <p class="bot-name">HealthSync AI</p>
+                    <p class="bot-status">
+                        <span id="serverStatusDot" class="status-dot offline" title="Server status"></span>
+                        <span id="serverStatusText" class="server-status-text">Checking...</span>
+                        <span class="status-sep">•</span>
+                        <span class="server-status-note">Ready to help</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="messages-area" id="messagesArea">
+                <div class="welcome-message">
+                    <div class="welcome-icon">💬</div>
+                    <h3>Welcome to HealthSync!</h3>
+                    <p>Your AI-powered medical assistant. Ask me anything about health, symptoms, or medical information.</p>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <form id="messageForm">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Type your health question..."
+                            autocomplete="off"
+                            required
+                        />
+                        <button type="submit" id="sendBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // ----- Server health / online detection -----
+            const $statusDot = $("#serverStatusDot");
+            const $statusText = $("#serverStatusText");
+            const $sendBtn = $("#sendBtn");
+
+            function setServerStatus(online) {
+                $statusDot.removeClass("online offline");
+                $statusDot.addClass(online ? "online" : "offline");
+                $statusDot.attr("title", online ? "Server: online" : "Server: offline");
+                $statusText.text(online ? "Online" : "Offline");
+                // Optionally disable sending when offline
+                if (!online) {
+                    $sendBtn.prop("disabled", true);
+                } else {
+                    $sendBtn.prop("disabled", false);
+                }
+            }
+
+            function checkHealth() {
+                $.ajax({
+                    url: "/health",
+                    method: "GET",
+                    timeout: 2000,
+                    cache: false
+                }).done(function(data){
+                    setServerStatus(true);
+                }).fail(function(){
+                    setServerStatus(false);
+                });
+            }
+
+            // Initial check and periodic polling
+            checkHealth();
+            const healthInterval = setInterval(checkHealth, 4000);
+
+            // Re-check when tab becomes visible
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") checkHealth();
+            });
+            // ----- end server health code -----
+
+            const messagesArea = $("#messagesArea");
+            const messageInput = $("#messageInput");
+            const sendBtn = $("#sendBtn");
+            const messageForm = $("#messageForm");
+
+            // Remove welcome message on first interaction
+            let isFirstMessage = true;
+
+            // Get current time
+            function getCurrentTime() {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                return `${hours}:${minutes}`;
+            }
+
+            // Scroll to bottom
+            function scrollToBottom() {
+                messagesArea.animate({
+                    scrollTop: messagesArea[0].scrollHeight
+                }, 300);
+            }
+
+            // Add user message
+            function addUserMessage(text) {
+                const time = getCurrentTime();
+                const messageHtml = `
+                    <div class="message message-user">
+                        <div class="message-content">
+                            ${text}
+                            <span class="message-time">${time}</span>
+                        </div>
+                        <div class="message-avatar user-msg-avatar">
+                            👤
+                        </div>
+                    </div>
+                `;
+                messagesArea.append(messageHtml);
+                scrollToBottom();
+            }
+
+            // Add bot message
+            function addBotMessage(text) {
+                const time = getCurrentTime();
+                const messageHtml = `
+                    <div class="message message-bot">
+                        <div class="message-avatar bot-msg-avatar">
+                            🤖
+                        </div>
+                        <div class="message-content">
+                            ${text}
+                            <span class="message-time">${time}</span>
+                        </div>
+                    </div>
+                `;
+                messagesArea.append(messageHtml);
+                scrollToBottom();
+            }
+
+            // Show typing indicator
+            function showTypingIndicator() {
+                const typingHtml = `
+                    <div class="typing-indicator active" id="typingIndicator">
+                        <div class="message-avatar bot-msg-avatar">
+                            🤖
+                        </div>
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                messagesArea.append(typingHtml);
+                scrollToBottom();
+            }
+
+            // Hide typing indicator
+            function hideTypingIndicator() {
+                $("#typingIndicator").remove();
+            }
+
+            // Handle form submission
+            messageForm.on("submit", function(event) {
+                event.preventDefault();
+                
+                const userMessage = messageInput.val().trim();
+                if (!userMessage) return;
+
+                // Remove welcome message on first interaction
+                if (isFirstMessage) {
+                    $(".welcome-message").fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                    isFirstMessage = false;
+                }
+
+                // Add user message
+                addUserMessage(userMessage);
+                messageInput.val("");
+                
+                // Disable send button
+                sendBtn.prop("disabled", true);
+                
+                // Show typing indicator
+                showTypingIndicator();
+
+                // Send AJAX request
+                $.ajax({
+                    data: { msg: userMessage },
+                    type: "POST",
+                    url: "/get",
+                })
+                .done(function(data) {
+                    // Hide typing indicator
+                    hideTypingIndicator();
+                    
+                    // Add bot response
+                    addBotMessage(data);
+                    
+                    // Enable send button
+                    sendBtn.prop("disabled", false);
+                    messageInput.focus();
+                })
+                .fail(function() {
+                    hideTypingIndicator();
+                    addBotMessage("Sorry, I'm having trouble connecting. Please try again.");
+                    sendBtn.prop("disabled", false);
+                    messageInput.focus();
+                });
+            });
+
+            // Focus input on load
+            messageInput.focus();
+         });
+     </script>
+ </body>
+ </html>

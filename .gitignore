@@ -1,12 +1,59 @@
-# venv
-healthSync
-
-# environment variables
+# Secrets and env files
 .env
+.env.*
 
-# egg-info
-*.egg-info/
-
-# __pycache__
+# Python bytecode
 __pycache__/
-src/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual envs
+venv/
+env/
+healthSync/
+HealthSyncChatbot.egg-info/
+
+# Large files / datasets
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.csv
+*.zip
+*.rar
+
+# Hugging Face / caches
+.huggingface/
+huggingface/
+.cache/
+cache/
+transformers_cache/
+
+# Model files & checkpoints
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.pkl
+
+# IDEs and notebooks
+.vscode/
+.idea/
+.ipynb_checkpoints/
+
+# Build and packaging
+pip-wheel-metadata/
+build/
+dist/
+
+# Logs and runtime artifacts
+*.log
+logs/
+runs/
+checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
