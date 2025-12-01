@@ -2,14 +2,13 @@ from flask import Flask, render_template, jsonify, request
 from src.helper import download_hugging_face_embeddings
 from langchain_pinecone import PineconeVectorStore
 
-# 🟢 IMPORTANT: use ChatGroq instead of OpenAI
 from langchain_groq import ChatGroq
 
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
-from src.prompt import *   # system_prompt, etc.
+from src.prompt import *   
 import os
 
 app = Flask(__name__)
@@ -17,13 +16,13 @@ app = Flask(__name__)
 load_dotenv()
 
 PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY')   # 🔁 new variable
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')   
 
-# set env for pinecone, groq (optional but okay)
+
 os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-# ---------- Embeddings & Retriever ----------
+
 embeddings = download_hugging_face_embeddings()
 
 index_name = "healthsync-index"
@@ -89,4 +88,5 @@ def health():
     return jsonify(status="ok"), 200
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    port = int(os.environ.get("PORT", 8080)) 
+    app.run(host="0.0.0.0", port=port, debug=False)
